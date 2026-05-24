@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Bell, Search, Moon, Sun, LogOut, User, Settings, ChevronDown } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Bell, Moon, Sun, LogOut, User, Settings, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,45 +12,53 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { useTheme } from "@/hooks/use-theme";
-import { useAuth } from "@/hooks/use-auth";
 
 interface TopbarProps {
   title?: string;
+  user?: { name: string; email: string; role: string } | null;
 }
 
-export function Topbar({ title }: TopbarProps) {
+export function Topbar({ title, user }: TopbarProps) {
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const [dark, setDark] = useState(false);
 
-  const handleLogout = async () => {
-    await logout();
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    if (stored === "dark") {
+      setDark(true);
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", next);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth-token");
     router.push("/login");
   };
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-gray-100 bg-white px-6 dark:border-gray-800 dark:bg-gray-950">
+    <header className="flex h-14 items-center justify-between border-b border-gray-100 bg-white px-6">
       <div className="flex items-center gap-4">
         {title && (
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
         )}
       </div>
 
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-gray-500">
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
-
-        <Button variant="ghost" size="icon" className="relative text-gray-500">
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-500" />
+          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2 text-gray-700 dark:text-gray-300">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold dark:bg-blue-900 dark:text-blue-300">
+            <Button variant="ghost" className="flex items-center gap-2 px-2 text-gray-700">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
                 {user?.name?.charAt(0).toUpperCase() || "U"}
               </div>
               <span className="hidden text-sm font-medium sm:inline-block">{user?.name || "Usuario"}</span>
@@ -59,16 +67,12 @@ export function Topbar({ title }: TopbarProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
+              <div className="flex flex-col space-y-0.5">
                 <p className="text-sm font-medium">{user?.name}</p>
                 <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings/profile")}>
-              <User className="mr-2 h-4 w-4" />
-              Mi Perfil
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/settings")}>
               <Settings className="mr-2 h-4 w-4" />
               Configuración

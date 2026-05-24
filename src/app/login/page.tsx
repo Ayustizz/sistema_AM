@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,9 +13,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("admin123");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
-  const { login } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth-token");
+    if (token) {
+      router.replace("/dashboard");
+    } else {
+      setChecking(false);
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,17 +32,38 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Error al iniciar sesión");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem("auth-token", data.data.token);
       router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
-    } finally {
+    } catch {
+      setError("Error de conexión");
       setLoading(false);
     }
   };
 
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4 dark:from-gray-950 dark:to-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="w-full max-w-sm animate-fade-in">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
@@ -42,15 +71,15 @@ export default function LoginPage() {
             <BarChart3 className="h-6 w-6 text-white" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">BizAdmin</h1>
+            <h1 className="text-2xl font-bold text-gray-900">BizAdmin</h1>
             <p className="text-sm text-gray-500">Sistema de Administración</p>
           </div>
         </div>
 
         <Card className="border-gray-100 shadow-xl shadow-gray-100/50">
           <CardHeader className="pb-4">
-            <CardTitle className="text-center text-lg">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-center text-lg text-gray-900">Iniciar Sesión</CardTitle>
+            <CardDescription className="text-center text-gray-500">
               Ingresá tus credenciales para continuar
             </CardDescription>
           </CardHeader>
@@ -93,7 +122,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 border border-red-100">
                   {error}
                 </div>
               )}
@@ -110,8 +139,10 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-4 rounded-lg bg-blue-50 px-3 py-2.5 text-xs text-blue-700">
-              <span className="font-semibold">Demo:</span> admin@bizadmin.com / admin123
+            <div className="mt-4 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 text-xs text-blue-700">
+              <p className="font-semibold mb-1">Credenciales de demo:</p>
+              <p>Email: <strong>admin@bizadmin.com</strong></p>
+              <p>Contraseña: <strong>admin123</strong></p>
             </div>
           </CardContent>
         </Card>

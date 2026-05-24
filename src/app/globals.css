@@ -1,13 +1,10 @@
 @import "tailwindcss";
 
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-}
+/* Force class-based dark mode — override Tailwind v4's default media-query dark */
+@variant dark (&:where(.dark, .dark *));
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
+:root {
+  color-scheme: light;
 }
 
 * {
@@ -18,6 +15,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
 /* Custom scrollbar */
@@ -37,10 +36,6 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
 }
 
 /* Smooth animations */
