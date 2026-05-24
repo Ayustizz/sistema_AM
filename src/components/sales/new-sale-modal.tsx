@@ -208,12 +208,12 @@ export function NewSaleModal({ open, onClose, onSaved }: Props) {
             {/* Customer */}
             <div className="space-y-1.5">
               <Label>Cliente (opcional)</Label>
-              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <Select value={selectedCustomerId} onValueChange={(v) => setSelectedCustomerId(v === "__none__" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Cliente ocasional" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cliente ocasional</SelectItem>
+                  <SelectItem value="__none__">Cliente ocasional</SelectItem>
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name} {c.phone ? `— ${c.phone}` : ""}</SelectItem>
                   ))}
