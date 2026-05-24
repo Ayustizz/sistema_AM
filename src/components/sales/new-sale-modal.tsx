@@ -198,7 +198,7 @@ export function NewSaleModal({ open, onClose, onSaved }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Nueva Venta</DialogTitle>
         </DialogHeader>

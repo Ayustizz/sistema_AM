@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -73,34 +73,79 @@ export default function InventoryPage() {
       toast({ title: "Movimiento registrado" });
       setForm({ productId: "", type: "IN", quantity: "1", reason: "", reference: "" });
       setProductSearch("");
+      setProducts([]);
     } else {
       alert(error);
     }
     setSaving(false);
   };
 
-  const selectedProduct = products.find((p) => p.id === form.productId);
-
   return (
     <AppLayout title="Inventario">
-      <div className="space-y-5 animate-fade-in">
+      <div className="space-y-4 animate-fade-in">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">{total} movimientos registrados</p>
-          <Button onClick={() => setShowModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Registrar Movimiento
+          <p className="text-sm text-gray-500">{total} movimientos</p>
+          <Button onClick={() => setShowModal(true)} size="sm">
+            <Plus className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">Registrar Movimiento</span>
+            <span className="sm:hidden">Registrar</span>
           </Button>
         </div>
 
-        <Card>
+        {/* Mobile: cards */}
+        <div className="block lg:hidden space-y-2">
+          {loading ? (
+            [...Array(5)].map((_, i) => <Card key={i} className="animate-pulse"><CardContent className="p-4 h-20" /></Card>)
+          ) : movements.length === 0 ? (
+            <div className="py-16 text-center">
+              <Boxes className="mx-auto mb-3 h-8 w-8 text-gray-300" />
+              <p className="text-sm text-gray-400">No hay movimientos</p>
+            </div>
+          ) : (
+            movements.map((m) => {
+              const typeStyle = TYPE_STYLES[m.type] || TYPE_STYLES.ADJUSTMENT;
+              const Icon = typeStyle.icon;
+              return (
+                <Card key={m.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-50 ${typeStyle.color}`}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-gray-900 truncate">{m.product?.name}</p>
+                          <Badge variant={typeStyle.variant} className="ml-2 shrink-0 text-xs">
+                            {MOVEMENT_TYPE_LABELS[m.type]}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
+                          <span className={`font-semibold text-sm ${typeStyle.color}`}>
+                            {m.type === "OUT" ? "-" : "+"}{m.quantity}
+                          </span>
+                          <span>{m.previousQty} → {m.newQty}</span>
+                          {m.reason && <span className="text-gray-400 truncate">{m.reason}</span>}
+                        </div>
+                        <p className="mt-0.5 text-xs text-gray-400">{formatDate(m.createdAt, "time")}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: table */}
+        <Card className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Producto</TableHead>
                 <TableHead className="text-center">Cantidad</TableHead>
-                <TableHead className="text-center">Stock Anterior</TableHead>
-                <TableHead className="text-center">Stock Nuevo</TableHead>
+                <TableHead className="text-center">Anterior</TableHead>
+                <TableHead className="text-center">Nuevo</TableHead>
                 <TableHead>Referencia</TableHead>
                 <TableHead>Motivo</TableHead>
                 <TableHead>Fecha</TableHead>
@@ -110,12 +155,7 @@ export default function InventoryPage() {
               {loading ? (
                 [...Array(8)].map((_, i) => <TableRow key={i}>{[...Array(8)].map((_, j) => <TableCell key={j}><div className="h-4 rounded bg-gray-100 animate-pulse" /></TableCell>)}</TableRow>)
               ) : movements.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="py-16 text-center">
-                    <Boxes className="mx-auto mb-3 h-8 w-8 text-gray-300" />
-                    <p className="text-sm text-gray-400">No hay movimientos de stock</p>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={8} className="py-16 text-center"><Boxes className="mx-auto mb-3 h-8 w-8 text-gray-300" /><p className="text-sm text-gray-400">No hay movimientos</p></TableCell></TableRow>
               ) : (
                 movements.map((m) => {
                   const typeStyle = TYPE_STYLES[m.type] || TYPE_STYLES.ADJUSTMENT;
@@ -125,29 +165,14 @@ export default function InventoryPage() {
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <Icon className={`h-4 w-4 ${typeStyle.color}`} />
-                          <Badge variant={typeStyle.variant as "success" | "destructive" | "secondary"}>
-                            {MOVEMENT_TYPE_LABELS[m.type]}
-                          </Badge>
+                          <Badge variant={typeStyle.variant}>{MOVEMENT_TYPE_LABELS[m.type]}</Badge>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-medium">{m.product?.name}</p>
-                          <code className="text-xs text-gray-400">{m.product?.sku}</code>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className={`font-semibold ${typeStyle.color}`}>
-                          {m.type === "OUT" ? "-" : "+"}{m.quantity}
-                        </span>
-                      </TableCell>
+                      <TableCell><div><p className="text-sm font-medium">{m.product?.name}</p><code className="text-xs text-gray-400">{m.product?.sku}</code></div></TableCell>
+                      <TableCell className="text-center"><span className={`font-semibold ${typeStyle.color}`}>{m.type === "OUT" ? "-" : "+"}{m.quantity}</span></TableCell>
                       <TableCell className="text-center text-gray-500">{m.previousQty}</TableCell>
                       <TableCell className="text-center font-medium">{m.newQty}</TableCell>
-                      <TableCell>
-                        {m.reference ? (
-                          <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{m.reference}</code>
-                        ) : "—"}
-                      </TableCell>
+                      <TableCell>{m.reference ? <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{m.reference}</code> : "—"}</TableCell>
                       <TableCell className="text-sm text-gray-500">{m.reason || "—"}</TableCell>
                       <TableCell className="text-sm text-gray-400">{formatDate(m.createdAt, "time")}</TableCell>
                     </TableRow>
@@ -160,70 +185,47 @@ export default function InventoryPage() {
 
         <Dialog open={showModal} onOpenChange={(o) => !o && setShowModal(false)}>
           <DialogContent>
-            <DialogHeader><DialogTitle>Registrar Movimiento de Stock</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Registrar Movimiento</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>Producto *</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    value={productSearch}
-                    onChange={(e) => { setProductSearch(e.target.value); searchProducts(e.target.value); }}
-                    placeholder="Buscar producto..."
-                    className="pl-9"
-                  />
+                  <Input value={productSearch} onChange={(e) => { setProductSearch(e.target.value); searchProducts(e.target.value); }} placeholder="Buscar producto..." className="pl-9" />
                 </div>
                 {products.length > 0 && !form.productId && (
-                  <div className="rounded-lg border border-gray-100 bg-white shadow">
+                  <div className="rounded-lg border border-gray-100 bg-white shadow max-h-40 overflow-y-auto">
                     {products.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => { setForm({ ...form, productId: p.id }); setProductSearch(p.name); setProducts([]); }}
-                        className="flex w-full items-center justify-between px-3 py-2 hover:bg-gray-50 text-sm border-b border-gray-50 last:border-0"
-                      >
-                        <span>{p.name}</span>
-                        <span className="text-gray-400">Stock: {p.stock}</span>
+                      <button key={p.id} onClick={() => { setForm({ ...form, productId: p.id }); setProductSearch(p.name); setProducts([]); }} className="flex w-full items-center justify-between px-3 py-2.5 hover:bg-gray-50 text-sm border-b border-gray-50 last:border-0">
+                        <span className="font-medium">{p.name}</span>
+                        <span className="text-gray-400 text-xs">Stock: {p.stock}</span>
                       </button>
                     ))}
                   </div>
                 )}
-                {selectedProduct && (
-                  <p className="text-xs text-blue-600">Stock actual: {selectedProduct.stock} unidades</p>
-                )}
               </div>
-
               <div className="space-y-1.5">
                 <Label>Tipo *</Label>
                 <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(MOVEMENT_TYPE_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
+                    {Object.entries(MOVEMENT_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-1.5">
                 <Label>Cantidad *</Label>
                 <Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} min="1" />
               </div>
-
               <div className="space-y-1.5">
                 <Label>Motivo</Label>
-                <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="Ej: Compra, ajuste de inventario..." />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Referencia</Label>
-                <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="N° de factura, etc..." />
+                <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} placeholder="Ej: Compra, ajuste..." />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowModal(false)}>Cancelar</Button>
               <Button onClick={handleSave} disabled={saving || !form.productId}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Registrar
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Registrar
               </Button>
             </DialogFooter>
           </DialogContent>

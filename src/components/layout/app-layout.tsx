@@ -20,6 +20,8 @@ interface CurrentUser {
 export function AppLayout({ children, title }: AppLayoutProps) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +53,11 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       });
   }, [router]);
 
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -64,11 +71,21 @@ export function AppLayout({ children, title }: AppLayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar title={title} user={user} />
+      <Sidebar
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <Topbar
+          title={title}
+          user={user}
+          onMenuClick={() => setMobileOpen(true)}
+        />
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6">{children}</div>
+          <div className="p-4 lg:p-6">{children}</div>
         </main>
       </div>
     </div>
